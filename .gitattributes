@@ -1,2 +1,2 @@
-# CP949 + CRLF 그대로 유지. 줄바꿈이나 인코딩이 바뀌면 bat가 동작하지 않음
+# Keep CRLF byte for byte: cmd misreads batch files with LF line endings
 *.bat -text

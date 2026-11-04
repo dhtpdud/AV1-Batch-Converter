@@ -1,201 +1,203 @@
 # convert-av1
 
-폴더와 모든 하위 폴더의 영상을 AV1로 일괄 변환하는 Windows 배치 스크립트입니다.
-NVIDIA NVENC를 우선 쓰고, 쓸 수 없으면 다른 인코더로 자동 전환합니다.
+**English** | [한국어](README.ko.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md) | [Español](README.es.md) | [Français](README.fr.md) | [Deutsch](README.de.md) | [Português](README.pt-BR.md) | [Русский](README.ru.md) | [العربية](README.ar.md) | [हिन्दी](README.hi.md)
+
+A Windows batch script that converts every video in a folder and its subfolders to AV1.
+It uses NVIDIA NVENC first and switches to another encoder automatically if NVENC is not available.
 
 > [!WARNING]
-> **자막 트랙은 변환 결과에 남지 않습니다.** Y 모드(원본 삭제)로 실행하면 원본의 자막도 함께 사라지고 복구할 수 없습니다.
-> 처음에는 N 모드로 결과를 확인한 뒤에 Y 모드를 쓰세요. [한계](#한계)를 먼저 읽어 주세요.
+> **Subtitle tracks are not kept in the result.** In Y mode (delete originals), the original's subtitles are lost with it and cannot be recovered.
+> Use N mode first and check the results before using Y mode. Please read [Limitations](#limitations) first.
 
-## 기대 결과
+## Expected results
 
-실행하면 아래와 같이 동작합니다.
+When you run the script:
 
-- 지정한 폴더와 하위 폴더에서 mp4, mkv, mov, avi, wmv, flv, webm, m4v, ts, mts, m2ts, mpg, mpeg 파일을 찾습니다.
-- 이미 AV1인 영상은 변환하지 않습니다.
-- 1분 이상인 영상은 가운데 10초를 먼저 인코딩해 봅니다. 예상 크기가 원본의 90%를 넘으면 변환하지 않습니다.
-- 변환이 끝난 결과가 원본보다 크거나 같으면 결과를 버리고 원본을 그대로 둡니다.
-- 변환에 실패한 영상의 원본은 지우지 않습니다.
-- AV1 검사와 인코딩은 동시에 진행됩니다. 인코딩은 한 번에 한 파일씩 합니다.
-- 다시 실행하면 이미 처리한 파일을 건너뛰므로, 중간에 멈췄을 때 이어서 처리할 수 있습니다.
+- It finds mp4, mkv, mov, avi, wmv, flv, webm, m4v, ts, mts, m2ts, mpg and mpeg files in the folder and its subfolders.
+- Videos that are already AV1 are not converted.
+- For videos of 1 minute or longer, it first encodes 10 seconds from the middle. If the estimated size is over 90% of the original, the video is not converted.
+- If a finished result is the same size as the original or larger, the result is thrown away and the original is kept.
+- If a conversion fails, the original is not deleted.
+- Checking for AV1 and encoding run at the same time. Encoding handles one file at a time.
+- Running it again skips files that were already handled, so you can continue after stopping.
 
-**모든 영상이 작아지는 것은 아닙니다.** 이미 압축이 잘 된 영상은 건너뛰며, 파일 크기가 줄어드는 정도는 영상마다 다릅니다.
+**Not every video gets smaller.** Videos that are already well compressed are skipped, and the saving differs from video to video.
 
-### 얼마나 줄어드나
+### How much smaller
 
-**최소 0%(변환하지 않고 원본 유지), 측정된 최대 96%입니다.** 결과가 원본보다 크거나 같으면 버리므로 파일이 커지는 일은 없습니다.
+**From 0% (not converted, original kept) to a measured maximum of 96%.** Files never get larger, because a result that is the same size or larger is thrown away.
 
-한 PC에 있던 실제 영상 52개를 무작위로 골라 기본 설정(NVENC, CQ 30)으로 측정한 결과입니다.
+These results come from 52 real videos picked at random from one PC, using the default settings (NVENC, CQ 30).
 
-| 구분 | 원본 대비 크기 | 줄어든 양 |
+| Case | Size compared to original | Saving |
 |---|---|---|
-| 가장 많이 줄어든 영상 | 4% | 96% |
-| 변환된 영상 41개의 중앙값 | 44% | 56% |
-| 가장 적게 줄어든 변환 | 89% | 11% |
-| 건너뛴 영상 11개 (예상 크기 96~233%) | 100% (원본 유지) | 0% |
+| Largest saving | 4% | 96% |
+| Median of the 41 converted videos | 44% | 56% |
+| Smallest saving among converted videos | 89% | 11% |
+| The 11 skipped videos (estimated size 96-233%) | 100% (original kept) | 0% |
 
-| 원본 코덱 | 표본 | 변환 | 변환된 영상의 원본 대비 크기 |
+| Source codec | Sample | Converted | Size of converted videos compared to original |
 |---|---|---|---|
-| H.264 | 25개 | 18개 | 4~89% |
-| HEVC | 25개 | 21개 | 15~88% |
-| VP9, MPEG-4 | 각 1개 | 2개 | 81%, 23% |
+| H.264 | 25 | 18 | 4-89% |
+| HEVC | 25 | 21 | 15-88% |
+| VP9, MPEG-4 | 1 each | 2 | 81%, 23% |
 
-원본 비트레이트가 높을수록 많이 줄어듭니다. 건너뛴 영상을 포함한 크기의 중앙값은 5Mbps 미만 76%, 5~15Mbps 50%, 15~40Mbps 27%였습니다.
+The higher the source bitrate, the larger the saving. Median size, including skipped videos, was 76% below 5 Mbps, 50% at 5-15 Mbps, and 27% at 15-40 Mbps.
 
-이 숫자는 보장값이 아닙니다.
+These numbers are not a guarantee.
 
-- 영상마다 25%, 50%, 75% 지점의 10초씩, 총 30초의 영상 트랙만 비교한 값입니다. 전체 파일을 변환한 결과가 아닙니다.
-- 오디오는 대부분 그대로 복사하므로 실제 파일은 이 숫자보다 덜 줄어듭니다.
-- 1분 이상인 영상만 측정했고, 한 사람의 영상 모음이라 다른 영상에서는 범위가 달라질 수 있습니다.
-- NVENC로만 측정했습니다. 다른 인코더나 다른 `CQ` 값에서는 결과가 다릅니다.
-- 변환 전 예상이 빗나가면 10%보다 적게 줄어든 결과가 남을 수 있습니다.
+- Each video was compared on the video track only, using 10 seconds at each of the 25%, 50% and 75% points, for 30 seconds in total. These are not results from converting whole files.
+- Audio is usually copied as is, so real files shrink less than these numbers.
+- Only videos of 1 minute or longer were measured, and they are one person's collection. The range may differ for other videos.
+- Only NVENC was measured. Other encoders and other `CQ` values give different results.
+- If the estimate before conversion is wrong, a result that saves less than 10% can remain.
 
-### 결과 파일 위치
+### Where results go
 
-| 모드 | 저장 위치 | 원본 |
+| Mode | Saved to | Original |
 |---|---|---|
-| N (권장) | 각 폴더의 `av1\` 폴더 | 유지 |
-| Y | 원본이 있던 자리 | 변환에 성공하면 **영구 삭제** (휴지통을 거치지 않음) |
+| N (recommended) | An `av1\` folder inside each folder | Kept |
+| Y | Where the original was | **Permanently deleted** after a successful conversion (does not go to the Recycle Bin) |
 
-확장자는 원본과 같습니다. 다만 mov, m4v, ts, mts, m2ts, mpg, mpeg는 AV1을 담을 수 없어 `.mp4`로 저장합니다.
+The extension stays the same as the original. The exceptions are mov, m4v, ts, mts, m2ts, mpg and mpeg, which cannot hold AV1 and are saved as `.mp4`.
 
-### 변환 후 유지되는 것
+### What is kept after conversion
 
-아래는 테스트 영상으로 직접 확인한 결과입니다.
+These results were checked with test videos.
 
-| 항목 | 결과 |
+| Item | Result |
 |---|---|
-| 첫 번째 영상 트랙 | AV1로 변환 |
-| 오디오 트랙 (여러 개 포함, 언어 태그 포함) | 유지. 그대로 복사하며, mp4 저장 시 호환되지 않는 형식은 AAC 192kbps로 변환 |
-| 챕터, 제목 | 유지 |
-| 10비트 | 유지 |
-| HDR10 (BT.2020, PQ, 마스터링 정보) | 유지 (NVENC에서 확인) |
-| 회전 정보 | 화면 자체를 돌려서 저장. 보이는 방향은 같음 |
-| **자막 트랙** | **사라짐** |
-| **두 번째 이후 영상 트랙** | **사라짐** |
-| **4:2:2, 4:4:4 색 정보** | **4:2:0으로 줄어듦** |
+| First video track | Converted to AV1 |
+| Audio tracks (including multiple tracks and language tags) | Kept. Copied as is. When saving to mp4, incompatible formats are converted to AAC 192 kbps |
+| Chapters, title | Kept |
+| 10-bit | Kept |
+| HDR10 (BT.2020, PQ, mastering display data) | Kept (checked with NVENC) |
+| Rotation | The picture itself is rotated when saved. It looks the same |
+| **Subtitle tracks** | **Lost** |
+| **Second and later video tracks** | **Lost** |
+| **4:2:2 and 4:4:4 color** | **Reduced to 4:2:0** |
 
-## 필요한 것
+## Requirements
 
-- Windows 10 또는 11, 한국어 표시 언어 (코드 페이지 949)
-- `ffmpeg`, `ffprobe`가 PATH에 등록되어 있을 것
-- 아래 인코더 중 하나를 쓸 수 있을 것
+- Windows 10 or 11
+- `ffmpeg` and `ffprobe` on the PATH
+- At least one of the encoders below
 
-| 순서 | 인코더 | 조건 |
+| Order | Encoder | Needs |
 |---|---|---|
-| 1 | NVENC (`av1_nvenc`), 2개 사용 | RTX 4070 Ti 등 AV1 인코더가 2개인 NVIDIA 그래픽카드 |
-| 2 | NVENC (`av1_nvenc`), 1개 사용 | AV1을 지원하는 NVIDIA 그래픽카드 (RTX 40 시리즈 이상) |
-| 3 | Intel Quick Sync (`av1_qsv`) | AV1 인코딩을 지원하는 Intel 그래픽 |
-| 4 | AMD AMF (`av1_amf`) | AV1 인코딩을 지원하는 AMD 그래픽 |
-| 5 | CPU (`libsvtav1`, preset 10) | ffmpeg에 SVT-AV1이 포함되어 있을 것 |
+| 1 | NVENC (`av1_nvenc`), 2 engines | An NVIDIA graphics card with 2 AV1 encoders, such as the RTX 4070 Ti |
+| 2 | NVENC (`av1_nvenc`), 1 engine | An NVIDIA graphics card with AV1 support (RTX 40 series or later) |
+| 3 | Intel Quick Sync (`av1_qsv`) | Intel graphics with AV1 encoding |
+| 4 | AMD AMF (`av1_amf`) | AMD graphics with AV1 encoding |
+| 5 | CPU (`libsvtav1`, preset 10) | An ffmpeg build that includes SVT-AV1 |
 
-시작할 때 위 순서대로 실제 인코딩을 해 보고 처음 성공한 인코더를 씁니다. 쓰는 인코더는 `인코더: ...` 줄에 표시됩니다.
+At startup, the script runs a real test encode in this order and uses the first one that works. The encoder in use is shown on the `Encoder: ...` line.
 
-## 사용법
+## Usage
 
-1. [Releases](../../releases/latest)에서 `convert_av1.bat`를 내려받습니다.
-2. 변환할 폴더를 bat 아이콘에 끌어다 놓습니다. 또는 bat를 실행한 뒤 폴더 경로를 입력합니다.
-3. 대상 폴더를 확인하고 `Y`(원본 삭제) 또는 `N`(원본 유지)을 고릅니다.
+1. Download `convert_av1.bat` from [Releases](../../releases/latest).
+2. Drag the folder to convert onto the bat file, or run the bat file and type the folder path.
+3. Check the target folder and choose `Y` (delete originals) or `N` (keep originals).
 
-검사 진행 상황은 창 제목에 표시됩니다. 여러 창에서 다른 폴더를 동시에 실행해도 됩니다. 이때 창마다 속도는 느려집니다.
+Progress of the check is shown in the window title. You can run several windows on different folders at the same time, but each window will be slower.
 
-**멈추는 방법**: 창을 닫으세요. 그러면 변환 중이던 파일의 `이름.part.확장자` 파일이 남으니 직접 지워 주세요.
+**To stop**: close the window. The `name.part.ext` file of the conversion in progress is left behind, so delete it yourself.
 
-### 설정
+### Settings
 
-bat 파일 위쪽의 값을 바꾸면 됩니다.
+Change these values near the top of the bat file.
 
-| 값 | 기본값 | 뜻 |
+| Value | Default | Meaning |
 |---|---|---|
-| `CQ` | 30 | 화질 (0~63). 낮을수록 고화질, 큰 용량. 모든 영상에 똑같이 적용 |
-| `JOBS` | 8 | AV1 여부를 동시에 검사할 파일 수 |
-| `MIN_SAVE` | 10 | 예상 절감률(%)이 이 값보다 작으면 변환하지 않음 |
+| `CQ` | 30 | Quality (0-63). Lower means better quality and larger files. Applied the same to every video |
+| `JOBS` | 8 | How many files to check for AV1 at once |
+| `MIN_SAVE` | 10 | Do not convert if the estimated saving (%) is below this value |
 
-## 측정 결과
+## Measurements
 
-RTX 4070 Ti, i7-13700KF, Windows 11, ffmpeg 2026-10 빌드에서 측정했습니다. 다른 환경에서는 결과가 다릅니다.
+Measured with an RTX 4070 Ti, i7-13700KF, Windows 11 and an ffmpeg build from 2026-10. Results will differ in other environments.
 
-### 인코딩 속도
+### Encoding speed
 
-| 해상도 | NVENC 1개 | NVENC 2개 | CPU SVT-AV1 preset 10 |
+| Resolution | NVENC, 1 engine | NVENC, 2 engines | CPU SVT-AV1 preset 10 |
 |---|---|---|---|
-| 8K (7680×3840) | 31fps | 55fps | 약 14fps |
-| 4K | 107fps | 189fps | 측정 안 함 |
-| 1080p | 400fps | 574fps | 약 518fps |
+| 8K (7680×3840) | 31 fps | 55 fps | About 14 fps |
+| 4K | 107 fps | 189 fps | Not measured |
+| 1080p | 400 fps | 574 fps | About 518 fps |
 
-CPU 측정은 다른 변환 작업이 함께 돌던 상태입니다. 소프트웨어 인코더 비교(1080p)는 SVT-AV1 약 518fps, libaom 약 173fps, rav1e 약 5fps였습니다.
+The CPU measurements were taken while other conversions were running. Software encoders compared at 1080p: SVT-AV1 about 518 fps, libaom about 173 fps, rav1e about 5 fps.
 
-### CQ와 파일 크기
+### CQ and file size
 
-8K HEVC 영상의 20초 구간(원본 30Mbps)을 NVENC로 변환한 결과입니다. 이미 압축이 잘 된 영상은 CQ 30에서 오히려 커지는 예입니다.
+Results of converting a 20-second part of an 8K HEVC video (source 30 Mbps) with NVENC. This is an example of an already well-compressed video getting larger at CQ 30.
 
-| CQ | 비트레이트 | SSIM (원본 대비) | 판정 |
+| CQ | Bitrate | SSIM (vs. original) | Decision |
 |---|---|---|---|
-| 30 | 53.9Mbps | 0.9955 | 커지므로 건너뜀 |
-| 36 | 28.8Mbps | 0.9936 | 절감이 적어 건너뜀 |
-| 42 | 14.3Mbps | 0.9900 | 변환 |
+| 30 | 53.9 Mbps | 0.9955 | Skipped because it gets larger |
+| 36 | 28.8 Mbps | 0.9936 | Skipped because the saving is small |
+| 42 | 14.3 Mbps | 0.9900 | Converted |
 
-이런 영상까지 줄이려면 `CQ`를 올려야 하며, 그러면 다른 영상의 화질도 함께 낮아집니다.
+To shrink videos like this you have to raise `CQ`, which also lowers the quality of all other videos.
 
-### 파일이 많을 때
+### Large numbers of files
 
-| 항목 | 결과 |
+| Item | Result |
 |---|---|
-| 로컬 SSD, 영상 23,100개 찾기 | 0.6초 |
-| rclone crypt 마운트, 영상 22,887개 찾기 | 8.9초 |
-| 로컬 SSD, 23,100개 전체 처리 (전부 이미 AV1) | 224초 |
+| Finding 23,100 videos on a local SSD | 0.6 seconds |
+| Finding 22,887 videos on an rclone crypt mount | 8.9 seconds |
+| Processing all 23,100 on a local SSD (all already AV1) | 224 seconds |
 
-## 한계
+## Limitations
 
-### 데이터 손실 위험
+### Risk of data loss
 
-- **자막 트랙이 사라집니다.** 두 번째 이후 영상 트랙도 사라집니다. 필요한 파일은 Y 모드로 변환하지 마세요.
-- **Y 모드의 삭제는 되돌릴 수 없습니다.** `del`을 쓰므로 휴지통에 남지 않습니다.
-- **변환 결과를 재생해서 확인하지 않습니다.** ffmpeg 종료 코드와 파일 크기만 보고 성공으로 판단합니다. 영상 내용이 깨져도 ffmpeg가 성공을 반환하면 Y 모드에서는 원본이 지워집니다.
-- **AV1 변환은 손실 압축입니다.** 이미 압축된 영상을 다시 압축하므로 화질이 원본보다 좋아지지 않습니다.
-- **4:2:2, 4:4:4 영상은 색 해상도가 4:2:0으로 줄어듭니다.** 편집이나 색 보정에 쓸 촬영 원본은 N 모드를 쓰세요.
+- **Subtitle tracks are lost.** So are second and later video tracks. Do not use Y mode on files that need them.
+- **Deletion in Y mode cannot be undone.** It uses `del`, so nothing goes to the Recycle Bin.
+- **Results are not played back to check them.** Success is judged only by ffmpeg's exit code and the file size. If the video is damaged but ffmpeg reports success, the original is deleted in Y mode.
+- **AV1 conversion is lossy.** Compressing an already compressed video never makes the quality better than the original.
+- **4:2:2 and 4:4:4 videos lose color resolution when reduced to 4:2:0.** Use N mode for footage you plan to edit or color grade.
 
-### 판단이 틀릴 수 있는 부분
+### Where decisions can be wrong
 
-- **압축 여지 예상은 가운데 10초만 보고 판단합니다.** 테스트에서 30%로 예상한 영상이 실제로 45%였습니다. 실제로는 줄어들 영상을 건너뛸 수 있습니다.
-- **1분 미만인 영상은 미리 확인하지 않습니다.** 변환이 끝난 뒤에야 크기를 비교합니다.
-- **ffprobe가 파일을 읽지 못하면 AV1이 아닌 것으로 처리합니다.** 이미 AV1인 파일을 다시 인코딩할 수 있습니다.
+- **The estimate looks only at the middle 10 seconds.** In testing, a video estimated at 30% actually came out at 45%. Videos that would have shrunk can be skipped.
+- **Videos under 1 minute are not checked in advance.** Size is compared only after conversion.
+- **If ffprobe cannot read a file, it is treated as not AV1.** A file that is already AV1 may be encoded again.
 
-### 재생과 호환성
+### Playback and compatibility
 
-- 오래된 기기와 플레이어는 AV1을 재생하지 못합니다.
-- avi, wmv, flv는 확장자를 유지하지만 이 형식에 AV1을 담는 것은 표준 조합이 아니라서, 재생되지 않는 플레이어가 많습니다.
+- Older devices and players cannot play AV1.
+- avi, wmv and flv keep their extension, but AV1 in these formats is not a standard combination, and many players will not play it.
 
-### 파일 이름과 폴더
+### File names and folders
 
-- `a.mov`와 `a.mp4`처럼 결과 이름이 겹치면 뒤의 파일은 건너뜁니다.
-- 중간에 멈춰서 남은 `이름.part.mp4`는 다음 실행 때 일반 영상으로 취급합니다. 직접 지워 주세요.
-- 정션과 심볼릭 링크 폴더는 탐색하지 않습니다.
+- If result names collide, as with `a.mov` and `a.mp4`, the later file is skipped.
+- A `name.part.mp4` left behind after stopping is treated as a normal video on the next run. Delete it yourself.
+- Junctions and symbolic link folders are not searched.
 
-### 실행 환경
+### Environment
 
-- **한국어 Windows 전용입니다.** bat 파일이 CP949로 저장되어 있습니다. 다른 언어의 Windows에서는 시험하지 않았고, 메시지가 깨지거나 동작하지 않을 수 있습니다.
-- **bat 파일을 UTF-8로 저장하면 동작하지 않습니다.** 같은 이유로 GitHub 웹 화면에서는 한글이 깨져 보이며, 이것은 정상입니다.
-- **실행 중인 창이 쓰는 bat 파일을 덮어쓰지 마세요.** cmd가 파일을 조금씩 읽기 때문에 실행 중인 창이 엉뚱한 줄을 실행할 수 있습니다.
-- CPU 인코딩은 8K에서 약 14fps로 많이 느립니다.
-- ffmpeg에 `libsvtav1`이 없으면 CPU로 전환되지 않고 오류로 끝납니다.
+- **On-screen messages are in English.**
+- **It has only been tested on Korean Windows 11.** The bat file uses ASCII characters only, so it does not depend on the system language. It was confirmed to work with console code pages 437, 949 and 65001, but it has not been run on Windows in other languages.
+- **Do not overwrite a bat file that a running window is using.** cmd reads the file bit by bit, so a running window may execute the wrong lines.
+- CPU encoding is much slower, at about 14 fps for 8K.
+- If ffmpeg does not include `libsvtav1`, the script cannot switch to the CPU and ends with an error.
 
-### rclone 마운트에서 쓸 때
+### Using it on an rclone mount
 
-- `--vfs-cache-mode writes`가 필요합니다. `off`에서는 mp4와 mkv를 쓸 수 없어 모든 파일이 실패합니다.
-- Y 모드에서는 **업로드가 끝나기 전에 원본이 삭제됩니다.** 업로드가 실패하면 캐시에 남은 결과에 의존하게 되므로 주의하세요.
-- 업로드 중인 파일은 `--vfs-cache-max-age`와 `--vfs-cache-max-size`를 넘어도 캐시에서 지워지지 않으니, 캐시 드라이브에 여유 공간이 필요합니다.
-- 위 내용은 로컬 crypt 리모트로 시험한 결과입니다. 현재 버전은 실제 마운트에서 파일 찾기까지만 확인했고, 클라우드 저장소에서는 시험하지 않았습니다.
+- `--vfs-cache-mode writes` is required. With `off`, mp4 and mkv cannot be written and every file fails.
+- In Y mode, **originals are deleted before the upload finishes.** If the upload fails, you depend on the copy left in the cache, so be careful.
+- Files being uploaded are not removed from the cache even past `--vfs-cache-max-age` and `--vfs-cache-max-size`, so the cache drive needs free space.
+- These points were tested with a local crypt remote. The current version was only confirmed on a real mount up to finding files, and was not tested with cloud storage.
 
-### 시험하지 못한 것
+### Not tested
 
-- **Intel QSV와 AMD AMF로 실제 인코딩을 해 보지 못했습니다.** 하드웨어가 없어서 옵션이 올바르게 해석되는지까지만 확인했습니다. 화질이 NVENC의 CQ와 같은 수준인지도 알 수 없습니다.
-- NVENC가 1개뿐인 그래픽카드 (2개 모드 실패를 흉내 내어 전환만 확인)
-- NVENC가 없는 환경은 그래픽카드를 숨겨서 흉내 낸 것이며, 실제 AMD, Intel PC에서 실행하지 않았습니다.
-- VR(구면) 메타데이터, Dolby Vision이 유지되는지
-- CPU 인코딩에서 HDR 정보가 유지되는지
-- 260자를 넘는 긴 경로
+- **Real encoding with Intel QSV and AMD AMF has not been tried.** There was no such hardware, so only option parsing was checked. Whether the quality matches NVENC's CQ is also unknown.
+- Graphics cards with only one NVENC engine (only the switch was checked, by simulating a failure of 2-engine mode)
+- Environments without NVENC were simulated by hiding the graphics card. It has not been run on real AMD or Intel PCs.
+- Whether VR (spherical) metadata and Dolby Vision are kept
+- Whether HDR data is kept with CPU encoding
+- Paths longer than 260 characters
 
-## 라이선스
+## License
 
 [MIT](LICENSE)
