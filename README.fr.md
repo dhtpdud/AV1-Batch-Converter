@@ -42,7 +42,7 @@ Ces résultats proviennent de 52 vraies vidéos choisies au hasard sur un même 
 | HEVC | 25 | 21 | 15-88% |
 | VP9, MPEG-4 | 1 chacun | 2 | 81%, 23% |
 
-Plus le débit de la source est élevé, plus le gain est important. La taille médiane, vidéos ignorées comprises, était de 76% en dessous de 5 Mbps, de 50% à 5-15 Mbps et de 27% à 15-40 Mbps.
+Plus le débit de la source est élevé, plus le gain est important. Pour les sources en dessous de 5 Mbps, la taille médiane par rapport à l'original, vidéos ignorées comprises, était de 76%, contre 50% à 5-15 Mbps et 27% à 15-40 Mbps.
 
 Ces chiffres ne sont pas une garantie.
 
@@ -59,7 +59,7 @@ Ces chiffres ne sont pas une garantie.
 | N (recommandé) | Un dossier `av1\` dans chaque dossier | Conservé |
 | Y | À l'emplacement de l'original | **Supprimé définitivement** après une conversion réussie (ne passe pas par la Corbeille) |
 
-L'extension reste celle de l'original. Les exceptions sont mov, m4v, ts, mts, m2ts, mpg et mpeg, qui ne peuvent pas contenir de l'AV1 et sont enregistrés en `.mp4`.
+L'extension reste celle de l'original. Les exceptions sont mov, m4v, ts, mts, m2ts, mpg et mpeg, qui ne peuvent pas contenir d'AV1 et sont enregistrés en `.mp4`.
 
 ### Ce qui est conservé après la conversion
 
@@ -71,7 +71,7 @@ Ces résultats ont été vérifiés avec des vidéos de test.
 | Pistes audio (y compris les pistes multiples et les étiquettes de langue) | Conservées. Copiées telles quelles. Lors de l'enregistrement en mp4, les formats incompatibles sont convertis en AAC 192 kbps |
 | Chapitres, titre | Conservés |
 | 10 bits | Conservé |
-| HDR10 (BT.2020, PQ, données de l'écran de mastering) | Conservé (vérifié avec NVENC) |
+| HDR10 (BT.2020, PQ, données de l'écran de masterisation) | Conservé (vérifié avec NVENC) |
 | Rotation | L'image elle-même est pivotée à l'enregistrement. Le rendu est identique |
 | **Pistes de sous-titres** | **Perdues** |
 | **Deuxième piste vidéo et suivantes** | **Perdues** |
@@ -139,13 +139,13 @@ Résultats de la conversion avec NVENC d'un extrait de 20 secondes d'une vidéo 
 
 Pour réduire ce genre de vidéo, il faut augmenter `CQ`, ce qui baisse aussi la qualité de toutes les autres vidéos.
 
-### Grands nombres de fichiers
+### Grand nombre de fichiers
 
 | Élément | Résultat |
 |---|---|
-| Recherche de 23,100 vidéos sur un SSD local | 0.6 seconde |
-| Recherche de 22,887 vidéos sur un montage crypt rclone | 8.9 secondes |
-| Traitement des 23,100 vidéos sur un SSD local (toutes déjà en AV1) | 224 secondes |
+| Recherche de 23100 vidéos sur un SSD local | 0.6 seconde |
+| Recherche de 22887 vidéos sur un montage crypt rclone | 8.9 secondes |
+| Traitement des 23100 vidéos sur un SSD local (toutes déjà en AV1) | 224 secondes |
 
 ## Limitations
 
@@ -157,7 +157,7 @@ Pour réduire ce genre de vidéo, il faut augmenter `CQ`, ce qui baisse aussi la
 - **La conversion en AV1 est une compression avec perte.** Compresser une vidéo déjà compressée ne rend jamais la qualité meilleure que celle de l'original.
 - **Les vidéos 4:2:2 et 4:4:4 perdent de la résolution de couleur lorsqu'elles sont réduites à 4:2:0.** Utilisez le mode N pour les vidéos que vous prévoyez de monter ou d'étalonner.
 
-### Où les décisions peuvent se tromper
+### Où les décisions peuvent être erronées
 
 - **L'estimation ne regarde que les 10 secondes du milieu.** Lors des tests, une vidéo estimée à 30% a en réalité donné 45%. Des vidéos qui auraient diminué peuvent être ignorées.
 - **Les vidéos de moins de 1 minute ne sont pas vérifiées à l'avance.** La taille n'est comparée qu'après la conversion.

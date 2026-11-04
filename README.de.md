@@ -19,7 +19,7 @@ Wenn Sie das Skript ausführen:
 - Ist ein fertiges Ergebnis genauso groß wie das Original oder größer, wird das Ergebnis verworfen und das Original behalten.
 - Schlägt eine Konvertierung fehl, wird das Original nicht gelöscht.
 - Die AV1-Prüfung und das Kodieren laufen gleichzeitig. Kodiert wird jeweils nur eine Datei.
-- Bei einem erneuten Start werden bereits bearbeitete Dateien übersprungen, sodass Sie nach einem Abbruch weitermachen können.
+- Bei einem erneuten Start werden bereits verarbeitete Dateien übersprungen, sodass Sie nach einem Abbruch weitermachen können.
 
 **Nicht jedes Video wird kleiner.** Bereits gut komprimierte Videos werden übersprungen, und die Ersparnis ist von Video zu Video unterschiedlich.
 
@@ -42,7 +42,7 @@ Diese Ergebnisse stammen aus 52 echten, zufällig ausgewählten Videos von einem
 | HEVC | 25 | 21 | 15-88% |
 | VP9, MPEG-4 | je 1 | 2 | 81%, 23% |
 
-Je höher die Bitrate der Quelle, desto größer die Ersparnis. Die mediane Größe, einschließlich übersprungener Videos, lag bei 76% unter 5 Mbps, 50% bei 5-15 Mbps und 27% bei 15-40 Mbps.
+Je höher die Bitrate der Quelle, desto größer die Ersparnis. Bei Quellen unter 5 Mbps lag die mediane Größe, einschließlich übersprungener Videos, bei 76% des Originals, bei 5-15 Mbps bei 50% und bei 15-40 Mbps bei 27%.
 
 Diese Zahlen sind keine Garantie.
 
@@ -86,7 +86,7 @@ Diese Ergebnisse wurden mit Testvideos überprüft.
 | Reihenfolge | Encoder | Benötigt |
 |---|---|---|
 | 1 | NVENC (`av1_nvenc`), 2 Engines | Eine NVIDIA-Grafikkarte mit 2 AV1-Encodern, etwa die RTX 4070 Ti |
-| 2 | NVENC (`av1_nvenc`), 1 Engine | Eine NVIDIA-Grafikkarte mit AV1-Unterstützung (Serie RTX 40 oder neuer) |
+| 2 | NVENC (`av1_nvenc`), 1 Engine | Eine NVIDIA-Grafikkarte mit AV1-Unterstützung (RTX 40-Serie oder neuer) |
 | 3 | Intel Quick Sync (`av1_qsv`) | Intel-Grafik mit AV1-Kodierung |
 | 4 | AMD AMF (`av1_amf`) | AMD-Grafik mit AV1-Kodierung |
 | 5 | CPU (`libsvtav1`, Preset 10) | Ein ffmpeg-Build, der SVT-AV1 enthält |
@@ -99,7 +99,7 @@ Beim Start führt das Skript in dieser Reihenfolge eine echte Testkodierung durc
 2. Ziehen Sie den zu konvertierenden Ordner auf die bat-Datei, oder starten Sie die bat-Datei und geben Sie den Ordnerpfad ein.
 3. Prüfen Sie den Zielordner und wählen Sie `Y` (Originale löschen) oder `N` (Originale behalten).
 
-Der Fortschritt der Prüfung wird im Fenstertitel angezeigt. Sie können mehrere Fenster gleichzeitig für verschiedene Ordner ausführen, aber jedes Fenster wird dann langsamer.
+Der Fortschritt der Prüfung wird im Fenstertitel angezeigt. Sie können mehrere Fenster gleichzeitig für verschiedene Ordner laufen lassen, aber jedes Fenster wird dann langsamer.
 
 **Zum Beenden**: Schließen Sie das Fenster. Die Datei `name.part.ext` der laufenden Konvertierung bleibt zurück, löschen Sie sie also selbst.
 
@@ -143,9 +143,9 @@ Um solche Videos zu verkleinern, müssen Sie `CQ` erhöhen, was auch die Qualit�
 
 | Element | Ergebnis |
 |---|---|
-| 23,100 Videos auf einer lokalen SSD finden | 0.6 Sekunden |
-| 22,887 Videos auf einem rclone-crypt-Mount finden | 8.9 Sekunden |
-| Alle 23,100 auf einer lokalen SSD verarbeiten (alle bereits AV1) | 224 Sekunden |
+| 23100 Videos auf einer lokalen SSD finden | 0.6 Sekunden |
+| 22887 Videos auf einem rclone-crypt-Mount finden | 8.9 Sekunden |
+| Alle 23100 auf einer lokalen SSD verarbeiten (alle bereits AV1) | 224 Sekunden |
 
 ## Einschränkungen
 
@@ -161,7 +161,7 @@ Um solche Videos zu verkleinern, müssen Sie `CQ` erhöhen, was auch die Qualit�
 
 - **Die Schätzung betrachtet nur die mittleren 10 Sekunden.** In Tests kam ein auf 30% geschätztes Video tatsächlich auf 45%. Videos, die kleiner geworden wären, können übersprungen werden.
 - **Videos unter 1 Minute werden nicht vorab geprüft.** Die Größe wird erst nach der Konvertierung verglichen.
-- **Kann ffprobe eine Datei nicht lesen, gilt sie als nicht AV1.** Eine Datei, die bereits AV1 ist, wird dann möglicherweise erneut kodiert.
+- **Kann ffprobe eine Datei nicht lesen, wird sie als Nicht-AV1-Datei behandelt.** Eine Datei, die bereits AV1 ist, wird dann möglicherweise erneut kodiert.
 
 ### Wiedergabe und Kompatibilität
 
@@ -170,30 +170,30 @@ Um solche Videos zu verkleinern, müssen Sie `CQ` erhöhen, was auch die Qualit�
 
 ### Dateinamen und Ordner
 
-- Wenn Ergebnisnamen kollidieren, wie bei `a.mov` und `a.mp4`, wird die spätere Datei übersprungen.
+- Wenn Ergebnisnamen kollidieren, wie bei `a.mov` und `a.mp4`, wird die später verarbeitete Datei übersprungen.
 - Eine nach dem Beenden zurückgebliebene `name.part.mp4` wird beim nächsten Durchlauf wie ein normales Video behandelt. Löschen Sie sie selbst.
 - Junctions und als symbolische Links angelegte Ordner werden nicht durchsucht.
 
 ### Umgebung
 
 - **Die Bildschirmmeldungen sind auf Englisch.**
-- **Es wurde nur unter koreanischem Windows 11 getestet.** Die bat-Datei verwendet nur ASCII-Zeichen und hängt daher nicht von der Systemsprache ab. Die Funktion wurde mit den Konsolen-Codepages 437, 949 und 65001 bestätigt, unter Windows in anderen Sprachen wurde es aber nicht ausgeführt.
+- **Es wurde nur unter koreanischem Windows 11 getestet.** Die bat-Datei verwendet nur ASCII-Zeichen und hängt daher nicht von der Systemsprache ab. Die Funktion wurde mit den Konsolen-Codepages 437, 949 und 65001 bestätigt, unter Windows in anderen Sprachen wurde das Skript aber nicht ausgeführt.
 - **Überschreiben Sie keine bat-Datei, die gerade von einem laufenden Fenster verwendet wird.** cmd liest die Datei Stück für Stück, daher kann ein laufendes Fenster die falschen Zeilen ausführen.
 - Die CPU-Kodierung ist viel langsamer, mit etwa 14 fps bei 8K.
 - Wenn ffmpeg `libsvtav1` nicht enthält, kann das Skript nicht zur CPU wechseln und endet mit einem Fehler.
 
 ### Verwendung auf einem rclone-Mount
 
-- `--vfs-cache-mode writes` ist erforderlich. Mit `off` können mp4 und mkv nicht geschrieben werden, und jede Datei schlägt fehl.
+- `--vfs-cache-mode writes` ist erforderlich. Mit `off` können mp4 und mkv nicht geschrieben werden, und die Konvertierung schlägt bei jeder Datei fehl.
 - Im Y-Modus werden **Originale gelöscht, bevor der Upload abgeschlossen ist.** Schlägt der Upload fehl, sind Sie auf die im Cache verbliebene Kopie angewiesen, seien Sie also vorsichtig.
 - Dateien, die gerade hochgeladen werden, werden auch nach Überschreiten von `--vfs-cache-max-age` und `--vfs-cache-max-size` nicht aus dem Cache entfernt, daher braucht das Cache-Laufwerk freien Speicherplatz.
-- Diese Punkte wurden mit einem lokalen crypt-Remote getestet. Die aktuelle Version wurde auf einem echten Mount nur bis zum Finden der Dateien bestätigt und nicht mit Cloud-Speicher getestet.
+- Diese Punkte wurden mit einem lokalen crypt-Remote getestet. Die aktuelle Version wurde auf einem echten Mount nur bis zur Dateisuche bestätigt und nicht mit Cloud-Speicher getestet.
 
 ### Nicht getestet
 
 - **Echtes Kodieren mit Intel QSV und AMD AMF wurde nicht ausprobiert.** Solche Hardware war nicht vorhanden, daher wurde nur das Parsen der Optionen geprüft. Ob die Qualität dem CQ von NVENC entspricht, ist ebenfalls unbekannt.
 - Grafikkarten mit nur einer NVENC-Engine (nur die Umschaltung wurde geprüft, indem ein Ausfall des 2-Engine-Modus simuliert wurde)
-- Umgebungen ohne NVENC wurden simuliert, indem die Grafikkarte verborgen wurde. Auf echten AMD- oder Intel-PCs wurde es nicht ausgeführt.
+- Umgebungen ohne NVENC wurden simuliert, indem die Grafikkarte verborgen wurde. Auf echten AMD- oder Intel-PCs wurde das Skript nicht ausgeführt.
 - Ob VR-Metadaten (sphärisch) und Dolby Vision erhalten bleiben
 - Ob HDR-Daten bei der CPU-Kodierung erhalten bleiben
 - Pfade mit mehr als 260 Zeichen

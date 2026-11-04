@@ -42,15 +42,15 @@ Estes resultados vêm de 52 vídeos reais escolhidos ao acaso em um único PC, c
 | HEVC | 25 | 21 | 15-88% |
 | VP9, MPEG-4 | 1 de cada | 2 | 81%, 23% |
 
-Quanto maior a taxa de bits de origem, maior a economia. A mediana do tamanho, incluindo os vídeos ignorados, foi de 76% abaixo de 5 Mbps, 50% em 5-15 Mbps e 27% em 15-40 Mbps.
+Quanto maior a taxa de bits de origem, maior a economia. Com origem abaixo de 5 Mbps, a mediana do tamanho em relação ao original, incluindo os vídeos ignorados, foi de 76%; em 5-15 Mbps, de 50%; e em 15-40 Mbps, de 27%.
 
 Estes números não são uma garantia.
 
 - Cada vídeo foi comparado apenas na faixa de vídeo, usando 10 segundos em cada um dos pontos de 25%, 50% e 75%, num total de 30 segundos. Estes não são resultados da conversão de arquivos inteiros.
-- O áudio geralmente é copiado como está, então os arquivos reais diminuem menos do que estes números.
+- O áudio geralmente é copiado como está, então os arquivos reais diminuem menos do que estes números indicam.
 - Só foram medidos vídeos de 1 minuto ou mais, e eles são a coleção de uma única pessoa. O intervalo pode ser diferente com outros vídeos.
 - Só o NVENC foi medido. Outros codificadores e outros valores de `CQ` dão resultados diferentes.
-- Se a estimativa antes da conversão estiver errada, pode sobrar um resultado que economiza menos de 10%.
+- Se a estimativa antes da conversão estiver errada, pode permanecer um resultado que economize menos de 10%.
 
 ### Onde os resultados ficam
 
@@ -68,10 +68,10 @@ Estes resultados foram verificados com vídeos de teste.
 | Item | Resultado |
 |---|---|
 | Primeira faixa de vídeo | Convertida para AV1 |
-| Faixas de áudio (incluindo várias faixas e marcações de idioma) | Mantidas. Copiadas como estão. Ao salvar em mp4, formatos incompatíveis são convertidos para AAC 192 kbps |
+| Faixas de áudio (incluindo várias faixas e tags de idioma) | Mantidas. Copiadas como estão. Ao salvar em mp4, formatos incompatíveis são convertidos para AAC 192 kbps |
 | Capítulos, título | Mantidos |
 | 10 bits | Mantido |
-| HDR10 (BT.2020, PQ, dados da tela de masterização) | Mantido (verificado com NVENC) |
+| HDR10 (BT.2020, PQ, dados do monitor de masterização) | Mantido (verificado com NVENC) |
 | Rotação | A própria imagem é girada ao salvar. A aparência é a mesma |
 | **Faixas de legenda** | **Perdidas** |
 | **Segunda faixa de vídeo e seguintes** | **Perdidas** |
@@ -96,12 +96,12 @@ Ao iniciar, o script faz uma codificação de teste real nessa ordem e usa o pri
 ## Como usar
 
 1. Baixe `convert_av1.bat` em [Releases](../../releases/latest).
-2. Arraste a pasta a converter para cima do arquivo bat, ou execute o arquivo bat e digite o caminho da pasta.
+2. Arraste a pasta a ser convertida e solte-a sobre o arquivo bat, ou execute o arquivo bat e digite o caminho da pasta.
 3. Confira a pasta-alvo e escolha `Y` (excluir os originais) ou `N` (manter os originais).
 
 O progresso da verificação aparece no título da janela. Você pode executar várias janelas em pastas diferentes ao mesmo tempo, mas cada janela ficará mais lenta.
 
-**Para parar**: feche a janela. O arquivo `name.part.ext` da conversão em andamento fica para trás, então exclua-o manualmente.
+**Para parar**: feche a janela. O arquivo `name.part.ext` da conversão em andamento não é removido, então exclua-o manualmente.
 
 ### Configurações
 
@@ -143,9 +143,9 @@ Para diminuir vídeos assim, você precisa aumentar o `CQ`, o que também reduz 
 
 | Item | Resultado |
 |---|---|
-| Encontrar 23,100 vídeos em um SSD local | 0.6 segundos |
-| Encontrar 22,887 vídeos em uma montagem crypt do rclone | 8.9 segundos |
-| Processar todos os 23,100 em um SSD local (todos já em AV1) | 224 segundos |
+| Encontrar 23100 vídeos em um SSD local | 0.6 segundos |
+| Encontrar 22887 vídeos em uma montagem crypt do rclone | 8.9 segundos |
+| Processar todos os 23100 em um SSD local (todos já em AV1) | 224 segundos |
 
 ## Limitações
 
@@ -157,7 +157,7 @@ Para diminuir vídeos assim, você precisa aumentar o `CQ`, o que também reduz 
 - **A conversão para AV1 tem perdas.** Comprimir um vídeo já comprimido nunca deixa a qualidade melhor que a do original.
 - **Vídeos 4:2:2 e 4:4:4 perdem resolução de cor ao serem reduzidos para 4:2:0.** Use o modo N para material que você pretende editar ou no qual pretende fazer correção de cor.
 
-### Onde as decisões podem errar
+### Onde as decisões podem estar erradas
 
 - **A estimativa olha apenas os 10 segundos do meio.** Nos testes, um vídeo estimado em 30% acabou ficando com 45%. Vídeos que teriam diminuído podem ser ignorados.
 - **Vídeos com menos de 1 minuto não são verificados antecipadamente.** O tamanho só é comparado depois da conversão.
@@ -171,7 +171,7 @@ Para diminuir vídeos assim, você precisa aumentar o `CQ`, o que também reduz 
 ### Nomes de arquivos e pastas
 
 - Se os nomes dos resultados colidirem, como em `a.mov` e `a.mp4`, o arquivo processado depois é ignorado.
-- Um `name.part.mp4` deixado para trás após a parada é tratado como vídeo normal na execução seguinte. Exclua-o manualmente.
+- Um `name.part.mp4` que restar após a interrupção é tratado como vídeo normal na execução seguinte. Exclua-o manualmente.
 - Junções e pastas de links simbólicos não são pesquisadas.
 
 ### Ambiente
@@ -186,12 +186,12 @@ Para diminuir vídeos assim, você precisa aumentar o `CQ`, o que também reduz 
 
 - `--vfs-cache-mode writes` é obrigatório. Com `off`, mp4 e mkv não podem ser gravados e todos os arquivos falham.
 - No modo Y, **os originais são excluídos antes de o upload terminar.** Se o upload falhar, você depende da cópia que ficou no cache, então tenha cuidado.
-- Arquivos em upload não são removidos do cache mesmo depois de ultrapassar `--vfs-cache-max-age` e `--vfs-cache-max-size`, então a unidade do cache precisa de espaço livre.
+- Arquivos em upload não são removidos do cache mesmo que `--vfs-cache-max-age` e `--vfs-cache-max-size` sejam ultrapassados, então a unidade do cache precisa de espaço livre.
 - Estes pontos foram testados com um remote crypt local. A versão atual só foi confirmada em uma montagem real até a etapa de encontrar arquivos, e não foi testada com armazenamento em nuvem.
 
 ### Não testado
 
-- **A codificação real com Intel QSV e AMD AMF não foi experimentada.** Não havia esse hardware, então apenas a análise das opções foi verificada. Também não se sabe se a qualidade corresponde ao CQ do NVENC.
+- **A codificação real com Intel QSV e AMD AMF não foi testada.** Não havia esse hardware, então apenas a análise das opções foi verificada. Também não se sabe se a qualidade corresponde ao CQ do NVENC.
 - Placas de vídeo com apenas um motor NVENC (só a troca foi verificada, simulando uma falha do modo de 2 motores)
 - Ambientes sem NVENC foram simulados ocultando a placa de vídeo. Não foi executado em PCs reais com AMD ou Intel.
 - Se os metadados de VR (esféricos) e Dolby Vision são mantidos

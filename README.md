@@ -42,7 +42,7 @@ These results come from 52 real videos picked at random from one PC, using the d
 | HEVC | 25 | 21 | 15-88% |
 | VP9, MPEG-4 | 1 each | 2 | 81%, 23% |
 
-The higher the source bitrate, the larger the saving. Median size, including skipped videos, was 76% below 5 Mbps, 50% at 5-15 Mbps, and 27% at 15-40 Mbps.
+The higher the source bitrate, the larger the saving. Including skipped videos, the median size compared to the original was 76% for sources below 5 Mbps, 50% for 5-15 Mbps, and 27% for 15-40 Mbps.
 
 These numbers are not a guarantee.
 
@@ -170,7 +170,7 @@ To shrink videos like this you have to raise `CQ`, which also lowers the quality
 
 ### File names and folders
 
-- If result names collide, as with `a.mov` and `a.mp4`, the later file is skipped.
+- If result names collide, as with `a.mov` and `a.mp4`, the file processed later is skipped.
 - A `name.part.mp4` left behind after stopping is treated as a normal video on the next run. Delete it yourself.
 - Junctions and symbolic link folders are not searched.
 

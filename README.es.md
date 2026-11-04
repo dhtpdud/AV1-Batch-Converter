@@ -42,12 +42,12 @@ Estos resultados proceden de 52 videos reales elegidos al azar de un mismo PC, c
 | HEVC | 25 | 21 | 15-88% |
 | VP9, MPEG-4 | 1 de cada uno | 2 | 81%, 23% |
 
-Cuanto mayor es la tasa de bits de origen, mayor es el ahorro. La mediana del tamaño, incluidos los videos omitidos, fue del 76% por debajo de 5 Mbps, del 50% con 5-15 Mbps y del 27% con 15-40 Mbps.
+Cuanto mayor es la tasa de bits de origen, mayor es el ahorro. Con un origen de menos de 5 Mbps, la mediana del tamaño respecto al original, incluidos los videos omitidos, fue del 76%; con 5-15 Mbps, del 50%, y con 15-40 Mbps, del 27%.
 
 Estas cifras no son una garantía.
 
 - Cada video se comparó solo en la pista de video, usando 10 segundos en cada uno de los puntos del 25%, 50% y 75%, 30 segundos en total. No son resultados de convertir archivos completos.
-- El audio normalmente se copia tal cual, así que los archivos reales se reducen menos que estas cifras.
+- El audio normalmente se copia tal cual, así que los archivos reales se reducen menos de lo que indican estas cifras.
 - Solo se midieron videos de 1 minuto o más, y son la colección de una sola persona. El rango puede ser distinto con otros videos.
 - Solo se midió NVENC. Otros codificadores y otros valores de `CQ` dan resultados diferentes.
 - Si la estimación previa a la conversión es errónea, puede quedar un resultado que ahorre menos del 10%.
@@ -143,9 +143,9 @@ Para reducir videos como este hay que subir `CQ`, lo que también baja la calida
 
 | Elemento | Resultado |
 |---|---|
-| Encontrar 23,100 videos en un SSD local | 0.6 segundos |
-| Encontrar 22,887 videos en un montaje crypt de rclone | 8.9 segundos |
-| Procesar los 23,100 en un SSD local (todos ya en AV1) | 224 segundos |
+| Encontrar 23100 videos en un SSD local | 0.6 segundos |
+| Encontrar 22887 videos en un montaje crypt de rclone | 8.9 segundos |
+| Procesar los 23100 en un SSD local (todos ya en AV1) | 224 segundos |
 
 ## Limitaciones
 
@@ -170,9 +170,9 @@ Para reducir videos como este hay que subir `CQ`, lo que también baja la calida
 
 ### Nombres de archivo y carpetas
 
-- Si los nombres de los resultados coinciden, como con `a.mov` y `a.mp4`, se omite el archivo que va después.
+- Si los nombres de los resultados coinciden, como con `a.mov` y `a.mp4`, se omite el archivo que se procese después.
 - Un `name.part.mp4` que quede tras detener el proceso se trata como un video normal en la siguiente ejecución. Elimínalo manualmente.
-- Los puntos de unión y las carpetas de enlaces simbólicos no se examinan.
+- Los puntos de unión y las carpetas de vínculos simbólicos no se examinan.
 
 ### Entorno
 
@@ -186,8 +186,8 @@ Para reducir videos como este hay que subir `CQ`, lo que también baja la calida
 
 - `--vfs-cache-mode writes` es obligatorio. Con `off`, no se pueden escribir mp4 ni mkv y todos los archivos fallan.
 - En el modo Y, **los originales se eliminan antes de que termine la subida.** Si la subida falla, dependes de la copia que quede en la caché, así que ten cuidado.
-- Los archivos que se están subiendo no se eliminan de la caché aunque superen `--vfs-cache-max-age` y `--vfs-cache-max-size`, así que la unidad de la caché necesita espacio libre.
-- Estos puntos se probaron con un remote crypt local. La versión actual solo se confirmó en un montaje real hasta la búsqueda de archivos, y no se probó con almacenamiento en la nube.
+- Los archivos que se están subiendo no se eliminan de la caché aunque se superen `--vfs-cache-max-age` y `--vfs-cache-max-size`, así que la unidad de la caché necesita espacio libre.
+- Estos puntos se probaron con un remoto crypt local. La versión actual solo se confirmó en un montaje real hasta la búsqueda de archivos, y no se probó con almacenamiento en la nube.
 
 ### Sin probar
 
