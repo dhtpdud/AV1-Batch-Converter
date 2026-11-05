@@ -6,7 +6,7 @@ Ein Windows-Batch-Skript, das alle Videos in einem Ordner und seinen Unterordner
 Es verwendet zuerst NVIDIA NVENC und wechselt automatisch zu einem anderen Encoder, wenn NVENC nicht verfügbar ist.
 
 > [!WARNING]
-> **Untertitelspuren bleiben im Ergebnis nicht erhalten.** Im Y-Modus (Originale löschen) gehen die Untertitel des Originals mit ihm verloren und können nicht wiederhergestellt werden.
+> **Der Y-Modus (Originale löschen) kann nicht rückgängig gemacht werden.** Die AV1-Konvertierung ist verlustbehaftet, und das Original lässt sich danach nicht wiederherstellen.
 > Verwenden Sie zuerst den N-Modus und prüfen Sie die Ergebnisse, bevor Sie den Y-Modus verwenden. Bitte lesen Sie zuerst [Einschränkungen](#einschränkungen).
 
 ## Erwartete Ergebnisse
@@ -17,9 +17,10 @@ Wenn Sie das Skript ausführen:
 - Videos, die bereits in AV1 vorliegen, werden nicht konvertiert.
 - Bei Videos ab 1 Minute Länge kodiert es zuerst 10 Sekunden aus der Mitte. Liegt die geschätzte Größe über 90% des Originals, wird das Video nicht konvertiert.
 - Ist ein fertiges Ergebnis genauso groß wie das Original oder größer, wird das Ergebnis verworfen und das Original behalten.
+- Ein Video wird nicht konvertiert, wenn etwas darin nicht erhalten bleiben kann: 4:2:2-, 4:4:4- und 12-Bit-Videos, Datenspuren, die sich nicht kopieren lassen, sowie Cover in mkv. Bei HDR10+, Dolby-Vision-Profil 7 und Transparenz wählen Sie beim Start.
 - Schlägt eine Konvertierung fehl, wird das Original nicht gelöscht.
 - Die AV1-Prüfung und das Kodieren laufen gleichzeitig. Kodiert wird jeweils nur eine Datei.
-- Bei einem erneuten Start werden bereits verarbeitete Dateien übersprungen, sodass Sie nach einem Abbruch weitermachen können.
+- Die Ergebnisse werden in einem Protokoll festgehalten. Bei einem erneuten Start werden Videos aus dem Protokoll sofort und ohne Prüfung übersprungen, sodass Sie nach einem Abbruch weitermachen können.
 
 **Nicht jedes Video wird kleiner.** Bereits gut komprimierte Videos werden übersprungen, und die Ersparnis ist von Video zu Video unterschiedlich.
 
@@ -59,7 +60,7 @@ Diese Zahlen sind keine Garantie.
 | N (empfohlen) | Ein Ordner `av1\` innerhalb jedes Ordners | Bleibt erhalten |
 | Y | Am Ort des Originals | Wird nach erfolgreicher Konvertierung **endgültig gelöscht** (landet nicht im Papierkorb) |
 
-Die Dateiendung bleibt dieselbe wie beim Original. Ausnahmen sind mov, m4v, ts, mts, m2ts, mpg und mpeg: Diese Formate können kein AV1 enthalten und werden als `.mp4` gespeichert.
+Die Dateiendung bleibt dieselbe wie beim Original. Ausnahmen sind mov, m4v, ts, mts, m2ts, mpg und mpeg: Diese Formate können kein AV1 enthalten und werden als `.mp4` gespeichert. Lässt sich eine Spur in diesem Format nicht speichern, wird das Ergebnis als `.mkv` gespeichert.
 
 ### Was nach der Konvertierung erhalten bleibt
 
@@ -69,13 +70,25 @@ Diese Ergebnisse wurden mit Testvideos überprüft.
 |---|---|
 | Erste Videospur | Wird nach AV1 konvertiert |
 | Audiospuren (einschließlich mehrerer Spuren und Sprach-Tags) | Bleiben erhalten. Werden unverändert kopiert. Beim Speichern als mp4 werden inkompatible Formate in AAC 192 kbps konvertiert |
-| Kapitel, Titel | Bleiben erhalten |
+| Kapitel, Tags (Titel, Kommentar, Erstellungszeit und andere) | Bleiben erhalten |
 | 10-Bit | Bleibt erhalten |
 | HDR10 (BT.2020, PQ, Mastering-Display-Daten) | Bleibt erhalten (mit NVENC geprüft) |
 | Drehung | Das Bild selbst wird beim Speichern gedreht. Es sieht gleich aus |
-| **Untertitelspuren** | **Gehen verloren** |
-| **Zweite und weitere Videospuren** | **Gehen verloren** |
-| **4:2:2- und 4:4:4-Farbe** | **Wird auf 4:2:0 reduziert** |
+| VR-Metadaten (sphärisch, Stereo-3D) | Bleiben erhalten (mit einem echten VR-Video geprüft) |
+| Dateidatum (Erstellung, Änderung) | Bleibt erhalten |
+| Timecode | Bleibt erhalten |
+| Untertitelspuren | Bleiben erhalten. Werden unverändert kopiert |
+| Zweite und weitere Videospuren | Bleiben erhalten. Werden unverändert kopiert und daher nicht kleiner |
+| Cover, Schriften und andere Anhänge | Bleiben erhalten |
+| Dolby Vision (Profil 8 mit einem echten Video geprüft) | Bleibt erhalten. Solche Videos werden auf der CPU mit SVT-AV1 kodiert, das Ergebnis ist Profil 10 |
+| Untertitel innerhalb der Videospur | Bleiben mit NVENC erhalten. Mit anderen Encodern wird das Video nicht konvertiert |
+| XMP in mp4 und mov (auf Dateiebene) | Bleibt erhalten |
+| **4:2:2-, 4:4:4- und 12-Bit-Video** | **Wird nicht konvertiert.** Das Original bleibt unverändert |
+| **Datenspuren, die sich nicht kopieren lassen (GPS und andere)** | **Wird nicht konvertiert.** Das Original bleibt unverändert |
+| **Cover in mkv** | **Wird nicht konvertiert.** ffmpeg würde es in eine Videospur umwandeln, daher bleibt das Original unverändert |
+| **HDR10+** | **Wird beim Start gewählt** (überspringen, trotzdem konvertieren oder Original behalten) |
+| **Transparenz** | **Wird beim Start gewählt** (überspringen, trotzdem konvertieren oder Original behalten) |
+| **Dolby-Vision-Profil 7** | **Wird beim Start gewählt** (überspringen, trotzdem konvertieren oder Original behalten) |
 
 ## Voraussetzungen
 
@@ -98,10 +111,23 @@ Beim Start führt das Skript in dieser Reihenfolge eine echte Testkodierung durc
 1. Laden Sie `convert_av1.bat` unter [Releases](../../releases/latest) herunter.
 2. Ziehen Sie den zu konvertierenden Ordner auf die bat-Datei, oder starten Sie die bat-Datei und geben Sie den Ordnerpfad ein.
 3. Prüfen Sie den Zielordner und wählen Sie `Y` (Originale löschen) oder `N` (Originale behalten).
+4. Wählen Sie, was mit Videos geschieht, die HDR10+, Dolby-Vision-Profil 7 oder Transparenz verlieren würden.
 
 Der Fortschritt der Prüfung wird im Fenstertitel angezeigt. Sie können mehrere Fenster gleichzeitig für verschiedene Ordner laufen lassen, aber jedes Fenster wird dann langsamer.
 
 **Zum Beenden**: Schließen Sie das Fenster. Die Datei `name.part.ext` der laufenden Konvertierung bleibt zurück, löschen Sie sie also selbst.
+
+### Videos, die nicht alles behalten können
+
+Vor Arbeitsbeginn werden zwei Fragen gestellt: eine zu HDR10+ und Dolby-Vision-Profil 7, eine zur Transparenz.
+
+| Auswahl | Ergebnis |
+|---|---|
+| 1 | Das Video wird übersprungen, das Original bleibt unverändert |
+| 2 | Das Video wird trotzdem konvertiert, und was nicht erhalten bleiben kann, geht verloren. Im Y-Modus wird das Original gelöscht |
+| 3 (nur Y-Modus) | Das Original bleibt erhalten, das Ergebnis wird in einem Ordner `av1\` gespeichert |
+
+Ein so übersprungenes Video wird erneut geprüft, wenn Sie bei einem späteren Start anders antworten. Ein Video mit Transparenz, das auch 4:4:4 ist, wird beim Konvertieren auf 4:2:0 reduziert.
 
 ### Einstellungen
 
@@ -112,6 +138,22 @@ Der Fortschritt der Prüfung wird im Fenstertitel angezeigt. Sie können mehrere
 | `CQ` | 30 | Qualität (0-63). Niedriger bedeutet bessere Qualität und größere Dateien. Gilt gleichermaßen für jedes Video |
 | `JOBS` | 8 | Wie viele Dateien gleichzeitig auf AV1 geprüft werden |
 | `MIN_SAVE` | 10 | Nicht konvertieren, wenn die geschätzte Ersparnis (%) unter diesem Wert liegt |
+| `LOG` | `convert_av1.log` neben der bat-Datei | Wohin die Ergebnisse geschrieben werden |
+
+### Ergebnisprotokoll
+
+Die Ergebnisse werden als tabulatorgetrennter Text an `convert_av1.log` neben der bat-Datei angehängt. Alle Ordner und Fenster verwenden diese eine Datei gemeinsam.
+
+| Ergebnis | Bedeutung | Beim nächsten Start |
+|---|---|---|
+| `converted`, `result` | Das konvertierte Video und die dabei erzeugte Datei | Übersprungen |
+| `av1` | Bereits AV1 | Übersprungen |
+| `skip-exists`, `skip-larger`, `skip-little-gain`, `skip-not-smaller`, `skip-color`, `skip-data`, `skip-cover`, `skip-dovi`, `skip-hdr10plus`, `skip-captions`, `skip-alpha` | Nicht konvertiert | Übersprungen, solange Encoder, `CQ` und `MIN_SAVE` gleich bleiben |
+| `failed` | Konvertierung fehlgeschlagen | Neuer Versuch |
+
+- Ein Video wird an Pfad, Größe und Änderungszeit erkannt. Ändert sich eines davon, wird es erneut geprüft.
+- Eine abgebrochene Konvertierung wird nicht festgehalten und beginnt daher wieder von vorn.
+- Um alle Videos erneut zu prüfen, löschen Sie das Protokoll.
 
 ## Messwerte
 
@@ -145,23 +187,26 @@ Um solche Videos zu verkleinern, müssen Sie `CQ` erhöhen, was auch die Qualit�
 |---|---|
 | 23100 Videos auf einer lokalen SSD finden | 0.6 Sekunden |
 | 22887 Videos auf einem rclone-crypt-Mount finden | 8.9 Sekunden |
-| Alle 23100 auf einer lokalen SSD verarbeiten (alle bereits AV1) | 224 Sekunden |
+| Alle 23100 auf einer lokalen SSD verarbeiten (alle bereits AV1) | 239 Sekunden |
+| Alle 23100 auf einer lokalen SSD erneut starten (alle im Protokoll) | 2.3 Sekunden |
 
 ## Einschränkungen
 
 ### Risiko von Datenverlust
 
-- **Untertitelspuren gehen verloren.** Das gilt auch für zweite und weitere Videospuren. Verwenden Sie den Y-Modus nicht für Dateien, die diese benötigen.
+- **Dolby Vision wurde nur mit Profil 8 geprüft.** Nur wenige Geräte und Player können Dolby Vision in AV1 (Profil 10) abspielen. Verwenden Sie bei Bedarf zuerst den N-Modus.
 - **Das Löschen im Y-Modus kann nicht rückgängig gemacht werden.** Es verwendet `del`, daher landet nichts im Papierkorb.
 - **Ergebnisse werden zur Prüfung nicht abgespielt.** Der Erfolg wird nur anhand des Exit-Codes von ffmpeg und der Dateigröße beurteilt. Ist das Video beschädigt, meldet ffmpeg aber Erfolg, wird das Original im Y-Modus gelöscht.
 - **Die AV1-Konvertierung ist verlustbehaftet.** Das Komprimieren eines bereits komprimierten Videos macht die Qualität nie besser als die des Originals.
-- **4:2:2- und 4:4:4-Videos verlieren Farbauflösung, wenn sie auf 4:2:0 reduziert werden.** Verwenden Sie den N-Modus für Material, das Sie schneiden oder farblich bearbeiten wollen.
+- **4:2:2-, 4:4:4- und 12-Bit-Videos werden nicht kleiner.** Die hier verwendeten AV1-Encoder unterstützen nur 4:2:0, daher bleiben solche Videos unverändert.
 
 ### Wo Entscheidungen falsch sein können
 
 - **Die Schätzung betrachtet nur die mittleren 10 Sekunden.** In Tests kam ein auf 30% geschätztes Video tatsächlich auf 45%. Videos, die kleiner geworden wären, können übersprungen werden.
 - **Videos unter 1 Minute werden nicht vorab geprüft.** Die Größe wird erst nach der Konvertierung verglichen.
 - **Kann ffprobe eine Datei nicht lesen, wird sie als Nicht-AV1-Datei behandelt.** Eine Datei, die bereits AV1 ist, wird dann möglicherweise erneut kodiert.
+- **Videos im Protokoll werden nicht mehr angesehen.** Wenn Sie ein Ergebnis löschen, wird es erst wieder erstellt, nachdem Sie die Zeilen dieses Videos oder das ganze Protokoll gelöscht haben.
+- **Eingebettete Untertitel und HDR10+ werden nur in den ersten 5 Bildern gesucht.** Beginnen sie später, wird das Video trotzdem konvertiert und HDR10+ geht verloren. Die Untertitel ebenfalls, außer mit NVENC.
 
 ### Wiedergabe und Kompatibilität
 
@@ -187,15 +232,14 @@ Um solche Videos zu verkleinern, müssen Sie `CQ` erhöhen, was auch die Qualit�
 - `--vfs-cache-mode writes` ist erforderlich. Mit `off` können mp4 und mkv nicht geschrieben werden, und die Konvertierung schlägt bei jeder Datei fehl.
 - Im Y-Modus werden **Originale gelöscht, bevor der Upload abgeschlossen ist.** Schlägt der Upload fehl, sind Sie auf die im Cache verbliebene Kopie angewiesen, seien Sie also vorsichtig.
 - Dateien, die gerade hochgeladen werden, werden auch nach Überschreiten von `--vfs-cache-max-age` und `--vfs-cache-max-size` nicht aus dem Cache entfernt, daher braucht das Cache-Laufwerk freien Speicherplatz.
-- Diese Punkte wurden mit einem lokalen crypt-Remote getestet. Die aktuelle Version wurde auf einem echten Mount nur bis zur Dateisuche bestätigt und nicht mit Cloud-Speicher getestet.
+- Das Änderungsdatum bleibt erhalten, auch nach erneutem Einbinden. Ein Mount zeigt das Änderungsdatum auch als Erstellungsdatum an, ein eigenes Erstellungsdatum gibt es also nicht.
+- Diese Punkte wurden auf crypt-Mounts über lokalen Laufwerken getestet, nicht mit Cloud-Speicher.
 
 ### Nicht getestet
 
 - **Echtes Kodieren mit Intel QSV und AMD AMF wurde nicht ausprobiert.** Solche Hardware war nicht vorhanden, daher wurde nur das Parsen der Optionen geprüft. Ob die Qualität dem CQ von NVENC entspricht, ist ebenfalls unbekannt.
 - Grafikkarten mit nur einer NVENC-Engine (nur die Umschaltung wurde geprüft, indem ein Ausfall des 2-Engine-Modus simuliert wurde)
 - Umgebungen ohne NVENC wurden simuliert, indem die Grafikkarte verborgen wurde. Auf echten AMD- oder Intel-PCs wurde das Skript nicht ausgeführt.
-- Ob VR-Metadaten (sphärisch) und Dolby Vision erhalten bleiben
-- Ob HDR-Daten bei der CPU-Kodierung erhalten bleiben
 - Pfade mit mehr als 260 Zeichen
 
 ## Lizenz

@@ -6,7 +6,7 @@ Script por lotes de Windows que convierte a AV1 todos los videos de una carpeta 
 Usa primero NVIDIA NVENC y, si NVENC no está disponible, cambia automáticamente a otro codificador.
 
 > [!WARNING]
-> **Las pistas de subtítulos no se conservan en el resultado.** En el modo Y (eliminar los originales), los subtítulos del original se pierden con él y no se pueden recuperar.
+> **El modo Y (eliminar los originales) no se puede deshacer.** La conversión a AV1 tiene pérdida de calidad y el original no se puede recuperar después.
 > Usa primero el modo N y revisa los resultados antes de usar el modo Y. Por favor, lee primero las [Limitaciones](#limitaciones).
 
 ## Resultados esperados
@@ -17,9 +17,10 @@ Al ejecutar el script:
 - Los videos que ya están en AV1 no se convierten.
 - En los videos de 1 minuto o más, primero codifica 10 segundos de la parte central. Si el tamaño estimado supera el 90% del original, el video no se convierte.
 - Si el resultado final tiene el mismo tamaño que el original o es mayor, se descarta y se conserva el original.
+- Un video no se convierte si algo de su contenido no se puede conservar: video 4:2:2, 4:4:4 y de 12 bits, pistas de datos que no se pueden copiar y carátulas en mkv. Para HDR10+, Dolby Vision perfil 7 y transparencia, eliges al empezar.
 - Si una conversión falla, el original no se elimina.
 - La comprobación de AV1 y la codificación se ejecutan al mismo tiempo. La codificación procesa un archivo a la vez.
-- Al volver a ejecutarlo, omite los archivos ya procesados, así que puedes continuar después de detenerlo.
+- Los resultados se registran en un log. Al volver a ejecutarlo, los videos del log se omiten de inmediato, sin comprobarlos, así que puedes continuar después de detenerlo.
 
 **No todos los videos reducen su tamaño.** Los videos que ya están bien comprimidos se omiten, y el ahorro varía de un video a otro.
 
@@ -59,7 +60,7 @@ Estas cifras no son una garantía.
 | N (recomendado) | Una carpeta `av1\` dentro de cada carpeta | Se conserva |
 | Y | Donde estaba el original | **Se elimina permanentemente** tras una conversión correcta (no va a la Papelera de reciclaje) |
 
-La extensión se mantiene igual que la del original. Las excepciones son mov, m4v, ts, mts, m2ts, mpg y mpeg, que no admiten AV1 y se guardan como `.mp4`.
+La extensión se mantiene igual que la del original. Las excepciones son mov, m4v, ts, mts, m2ts, mpg y mpeg, que no admiten AV1 y se guardan como `.mp4`. Si una pista no se puede guardar en ese formato, el resultado se guarda como `.mkv`.
 
 ### Qué se conserva tras la conversión
 
@@ -69,13 +70,25 @@ Estos resultados se comprobaron con videos de prueba.
 |---|---|
 | Primera pista de video | Se convierte a AV1 |
 | Pistas de audio (incluidas varias pistas y etiquetas de idioma) | Se conservan. Se copian tal cual. Al guardar en mp4, los formatos incompatibles se convierten a AAC 192 kbps |
-| Capítulos, título | Se conservan |
+| Capítulos, etiquetas (título, comentario, fecha de creación y otras) | Se conservan |
 | 10 bits | Se conserva |
 | HDR10 (BT.2020, PQ, datos de la pantalla de masterización) | Se conserva (comprobado con NVENC) |
 | Rotación | La propia imagen se gira al guardar. Se ve igual |
-| **Pistas de subtítulos** | **Se pierden** |
-| **Segunda pista de video y siguientes** | **Se pierden** |
-| **Color 4:2:2 y 4:4:4** | **Se reduce a 4:2:0** |
+| Metadatos de VR (esféricos, 3D estéreo) | Se conservan (comprobado con un video VR real) |
+| Fechas del archivo (creación, modificación) | Se conservan |
+| Código de tiempo | Se conserva |
+| Pistas de subtítulos | Se conservan. Se copian tal cual |
+| Segunda pista de video y siguientes | Se conservan. Se copian tal cual, así que no se reducen |
+| Carátula, fuentes y otros adjuntos | Se conservan |
+| Dolby Vision (perfil 8 comprobado con un video real) | Se conserva. Estos videos se codifican con SVT-AV1 en la CPU y el resultado es perfil 10 |
+| Subtítulos dentro de la pista de video | Se conservan con NVENC. Con otros codificadores el video no se convierte |
+| XMP en mp4 y mov (a nivel de archivo) | Se conserva |
+| **Video 4:2:2, 4:4:4 y de 12 bits** | **No se convierte.** El original queda igual |
+| **Pistas de datos que no se pueden copiar (GPS y otras)** | **No se convierte.** El original queda igual |
+| **Carátula en mkv** | **No se convierte.** ffmpeg la convertiría en una pista de video, así que el original queda igual |
+| **HDR10+** | **Se elige al empezar** (omitir, convertir igualmente o conservar el original) |
+| **Transparencia** | **Se elige al empezar** (omitir, convertir igualmente o conservar el original) |
+| **Dolby Vision perfil 7** | **Se elige al empezar** (omitir, convertir igualmente o conservar el original) |
 
 ## Requisitos
 
@@ -98,10 +111,23 @@ Al iniciarse, el script hace una codificación de prueba real en este orden y us
 1. Descarga `convert_av1.bat` desde [Releases](../../releases/latest).
 2. Arrastra la carpeta que quieres convertir sobre el archivo bat, o ejecuta el archivo bat y escribe la ruta de la carpeta.
 3. Comprueba la carpeta objetivo y elige `Y` (eliminar los originales) o `N` (conservar los originales).
+4. Elige qué hacer con los videos que perderían HDR10+, Dolby Vision perfil 7 o la transparencia.
 
 El progreso de la comprobación se muestra en el título de la ventana. Puedes ejecutar varias ventanas con carpetas diferentes al mismo tiempo, pero cada ventana irá más lenta.
 
 **Para detenerlo**: cierra la ventana. El archivo `name.part.ext` de la conversión en curso se queda ahí, así que elimínalo manualmente.
+
+### Videos que no pueden conservarlo todo
+
+Antes de empezar se hacen dos preguntas: una sobre HDR10+ y Dolby Vision perfil 7, y otra sobre la transparencia.
+
+| Opción | Qué ocurre |
+|---|---|
+| 1 | El video se omite y el original queda igual |
+| 2 | El video se convierte igualmente y se pierde lo que no se puede conservar. En el modo Y se elimina el original |
+| 3 (solo modo Y) | Se conserva el original y el resultado se guarda en una carpeta `av1\` |
+
+Un video omitido así se vuelve a comprobar si respondes de otra forma en una ejecución posterior. Un video con transparencia que además sea 4:4:4 se reduce a 4:2:0 al convertirlo.
 
 ### Configuración
 
@@ -112,6 +138,22 @@ Cambia estos valores cerca del principio del archivo bat.
 | `CQ` | 30 | Calidad (0-63). Un valor más bajo significa mejor calidad y archivos más grandes. Se aplica por igual a todos los videos |
 | `JOBS` | 8 | Cuántos archivos se comprueban a la vez para detectar AV1 |
 | `MIN_SAVE` | 10 | No convertir si el ahorro estimado (%) es inferior a este valor |
+| `LOG` | `convert_av1.log` junto al archivo bat | Dónde se registran los resultados |
+
+### Log de resultados
+
+Los resultados se añaden a `convert_av1.log`, junto al archivo bat, como texto separado por tabulaciones. Todas las carpetas y ventanas comparten este único archivo.
+
+| Resultado | Significado | En la siguiente ejecución |
+|---|---|---|
+| `converted`, `result` | El video convertido y el archivo que produjo | Se omite |
+| `av1` | Ya está en AV1 | Se omite |
+| `skip-exists`, `skip-larger`, `skip-little-gain`, `skip-not-smaller`, `skip-color`, `skip-data`, `skip-cover`, `skip-dovi`, `skip-hdr10plus`, `skip-captions`, `skip-alpha` | No se convirtió | Se omite mientras el codificador, `CQ` y `MIN_SAVE` no cambien |
+| `failed` | La conversión falló | Se vuelve a intentar |
+
+- Cada video se identifica por su ruta, su tamaño y su fecha de modificación. Si cambia alguno de estos datos, se vuelve a comprobar.
+- Una conversión detenida no se registra, así que vuelve a empezar desde el principio.
+- Para comprobar de nuevo todos los videos, elimina el log.
 
 ## Mediciones
 
@@ -145,23 +187,26 @@ Para reducir videos como este hay que subir `CQ`, lo que también baja la calida
 |---|---|
 | Encontrar 23100 videos en un SSD local | 0.6 segundos |
 | Encontrar 22887 videos en un montaje crypt de rclone | 8.9 segundos |
-| Procesar los 23100 en un SSD local (todos ya en AV1) | 224 segundos |
+| Procesar los 23100 en un SSD local (todos ya en AV1) | 239 segundos |
+| Volver a ejecutar los 23100 en un SSD local (todos en el log) | 2.3 segundos |
 
 ## Limitaciones
 
 ### Riesgo de pérdida de datos
 
-- **Las pistas de subtítulos se pierden.** Lo mismo ocurre con la segunda pista de video y las siguientes. No uses el modo Y en archivos que las necesiten.
+- **Dolby Vision solo se ha comprobado con el perfil 8.** Pocos dispositivos y reproductores pueden reproducir Dolby Vision en AV1 (perfil 10). Si lo necesitas, usa primero el modo N.
 - **La eliminación en el modo Y no se puede deshacer.** Usa `del`, así que nada va a la Papelera de reciclaje.
 - **Los resultados no se reproducen para comprobarlos.** El éxito se determina solo por el código de salida de ffmpeg y el tamaño del archivo. Si el video está dañado pero ffmpeg indica que todo salió bien, en el modo Y se elimina el original.
 - **La conversión a AV1 tiene pérdidas.** Comprimir un video ya comprimido nunca hace que la calidad sea mejor que la del original.
-- **Los videos 4:2:2 y 4:4:4 pierden resolución de color al reducirse a 4:2:0.** Usa el modo N con el material que pienses editar o al que vayas a aplicar corrección de color.
+- **Los videos 4:2:2, 4:4:4 y de 12 bits no se reducen.** Los codificadores AV1 que se usan aquí solo admiten 4:2:0, así que estos videos quedan igual.
 
 ### Dónde pueden fallar las decisiones
 
 - **La estimación solo mira los 10 segundos centrales.** En las pruebas, un video estimado en el 30% acabó en el 45%. Se pueden omitir videos que sí se habrían reducido.
 - **Los videos de menos de 1 minuto no se comprueban de antemano.** El tamaño solo se compara después de la conversión.
 - **Si ffprobe no puede leer un archivo, se trata como si no fuera AV1.** Un archivo que ya está en AV1 puede volver a codificarse.
+- **Los videos del log no se vuelven a examinar.** Si eliminas un resultado, no se genera de nuevo hasta que elimines las líneas de ese video del log o el log completo.
+- **Los subtítulos incrustados y HDR10+ solo se buscan en los primeros 5 fotogramas.** Si empiezan más tarde, el video se convierte igualmente y HDR10+ se pierde. Los subtítulos también, salvo con NVENC.
 
 ### Reproducción y compatibilidad
 
@@ -187,15 +232,14 @@ Para reducir videos como este hay que subir `CQ`, lo que también baja la calida
 - `--vfs-cache-mode writes` es obligatorio. Con `off`, no se pueden escribir mp4 ni mkv y todos los archivos fallan.
 - En el modo Y, **los originales se eliminan antes de que termine la subida.** Si la subida falla, dependes de la copia que quede en la caché, así que ten cuidado.
 - Los archivos que se están subiendo no se eliminan de la caché aunque se superen `--vfs-cache-max-age` y `--vfs-cache-max-size`, así que la unidad de la caché necesita espacio libre.
-- Estos puntos se probaron con un remoto crypt local. La versión actual solo se confirmó en un montaje real hasta la búsqueda de archivos, y no se probó con almacenamiento en la nube.
+- La fecha de modificación se conserva, también después de volver a montar. El montaje muestra la fecha de modificación también como fecha de creación, así que no hay una fecha de creación aparte que conservar.
+- Estos puntos se probaron en montajes crypt sobre unidades locales, no con almacenamiento en la nube.
 
 ### Sin probar
 
 - **La codificación real con Intel QSV y AMD AMF no se ha probado.** No se disponía de ese hardware, así que solo se comprobó el análisis de las opciones. Tampoco se sabe si la calidad coincide con el CQ de NVENC.
 - Tarjetas gráficas con un solo motor NVENC (solo se comprobó el cambio, simulando un fallo del modo de 2 motores)
 - Los entornos sin NVENC se simularon ocultando la tarjeta gráfica. No se ha ejecutado en PC reales con AMD o Intel.
-- Si se conservan los metadatos de VR (esféricos) y Dolby Vision
-- Si se conservan los datos HDR con la codificación por CPU
 - Rutas de más de 260 caracteres
 
 ## Licencia
