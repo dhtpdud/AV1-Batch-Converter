@@ -113,7 +113,7 @@ Al iniciarse, el script hace una codificación de prueba real en este orden y us
 3. Comprueba la carpeta objetivo y elige `Y` (eliminar los originales) o `N` (conservar los originales).
 4. Elige qué hacer con los videos que perderían HDR10+, Dolby Vision perfil 7 o la transparencia.
 
-El progreso de la comprobación se muestra en el título de la ventana. Puedes ejecutar varias ventanas con carpetas diferentes al mismo tiempo, pero cada ventana irá más lenta.
+El progreso de la comprobación se muestra en el título de la ventana. Puedes ejecutar varias ventanas al mismo tiempo, incluso con la misma carpeta, pero cada ventana irá más lenta. Si dos ventanas llegan al mismo video, una lo convierte y la otra pasa al siguiente.
 
 **Para detenerlo**: cierra la ventana. El archivo `name.part.ext` de la conversión en curso se queda ahí, así que elimínalo manualmente.
 
@@ -216,7 +216,7 @@ Para reducir videos como este hay que subir `CQ`, lo que también baja la calida
 ### Nombres de archivo y carpetas
 
 - Si los nombres de los resultados coinciden, como con `a.mov` y `a.mp4`, se omite el archivo que se procese después.
-- Un `name.part.mp4` que quede tras detener el proceso se trata como un video normal en la siguiente ejecución. Elimínalo manualmente.
+- Los archivos con nombres como `name.part.mp4` nunca se convierten, porque así se llaman los resultados sin terminar. Uno que quede tras detener el proceso se sobrescribe al volver a convertir ese video, o puedes eliminarlo manualmente.
 - Los puntos de unión y las carpetas de vínculos simbólicos no se examinan.
 
 ### Entorno

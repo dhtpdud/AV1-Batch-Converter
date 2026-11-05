@@ -113,7 +113,7 @@ Au démarrage, le script effectue un véritable encodage de test dans cet ordre 
 3. Vérifiez le dossier cible et choisissez `Y` (supprimer les originaux) ou `N` (conserver les originaux).
 4. Choisissez le sort des vidéos qui perdraient HDR10+, Dolby Vision profil 7 ou la transparence.
 
-La progression de la vérification s'affiche dans le titre de la fenêtre. Vous pouvez lancer plusieurs fenêtres sur différents dossiers en même temps, mais chaque fenêtre sera plus lente.
+La progression de la vérification s'affiche dans le titre de la fenêtre. Vous pouvez lancer plusieurs fenêtres en même temps, même sur le même dossier, mais chaque fenêtre sera plus lente. Si deux fenêtres arrivent à la même vidéo, l'une la convertit et l'autre passe à la suivante.
 
 **Pour arrêter** : fermez la fenêtre. Le fichier `name.part.ext` de la conversion en cours reste en place, supprimez-le donc vous-même.
 
@@ -216,7 +216,7 @@ Pour réduire ce genre de vidéo, il faut augmenter `CQ`, ce qui baisse aussi la
 ### Noms de fichiers et dossiers
 
 - Si les noms de résultats entrent en conflit, comme avec `a.mov` et `a.mp4`, le fichier traité en second est ignoré.
-- Un `name.part.mp4` laissé après un arrêt est traité comme une vidéo normale à l'exécution suivante. Supprimez-le vous-même.
+- Les fichiers nommés comme `name.part.mp4` ne sont jamais convertis, car c'est le nom des résultats inachevés. Un fichier laissé après un arrêt est écrasé quand cette vidéo est de nouveau convertie, ou vous pouvez le supprimer vous-même.
 - Les jonctions et les dossiers de liens symboliques ne sont pas parcourus.
 
 ### Environnement

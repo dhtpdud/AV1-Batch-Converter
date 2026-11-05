@@ -113,7 +113,7 @@ Ao iniciar, o script faz uma codificação de teste real nessa ordem e usa o pri
 3. Confira a pasta-alvo e escolha `Y` (excluir os originais) ou `N` (manter os originais).
 4. Escolha o que fazer com os vídeos que perderiam HDR10+, Dolby Vision perfil 7 ou a transparência.
 
-O progresso da verificação aparece no título da janela. Você pode executar várias janelas em pastas diferentes ao mesmo tempo, mas cada janela ficará mais lenta.
+O progresso da verificação aparece no título da janela. Você pode executar várias janelas ao mesmo tempo, mesmo na mesma pasta, mas cada janela ficará mais lenta. Se duas janelas chegarem ao mesmo vídeo, uma o converte e a outra passa para o próximo.
 
 **Para parar**: feche a janela. O arquivo `name.part.ext` da conversão em andamento não é removido, então exclua-o manualmente.
 
@@ -216,7 +216,7 @@ Para diminuir vídeos assim, você precisa aumentar o `CQ`, o que também reduz 
 ### Nomes de arquivos e pastas
 
 - Se os nomes dos resultados colidirem, como em `a.mov` e `a.mp4`, o arquivo processado depois é ignorado.
-- Um `name.part.mp4` que restar após a interrupção é tratado como vídeo normal na execução seguinte. Exclua-o manualmente.
+- Arquivos com nomes como `name.part.mp4` nunca são convertidos, porque esse é o nome dos resultados inacabados. Um arquivo que restar após a interrupção é sobrescrito quando esse vídeo for convertido de novo, ou você pode excluí-lo manualmente.
 - Junções e pastas de links simbólicos não são pesquisadas.
 
 ### Ambiente

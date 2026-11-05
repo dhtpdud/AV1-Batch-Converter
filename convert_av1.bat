@@ -66,7 +66,7 @@ echo Encoder: %ENCNAME%
 
 rem NVENC drops Dolby Vision and SVT-AV1 keeps it, so those videos go to SVT-AV1 whatever the encoder above is
 set SVT=libsvtav1 -preset 10 -crf %CQ% -dolbyvision 1
-ffmpeg -v quiet -f lavfi -i testsrc2=size=320x180:rate=30 -frames:v 2 -c:v libsvtav1 -preset 12 -f null NUL || set SVT=
+ffmpeg -nostdin -v quiet -f lavfi -i testsrc2=size=320x180:rate=30 -frames:v 2 -c:v libsvtav1 -preset 12 -f null NUL || set SVT=
 
 rem Trial encodes go to a local temp folder, not the video folder, which may be an rclone mount. Each run gets its own folder.
 rem RANDOM gives the same value to windows started in the same second, so keep drawing until mkdir claims an unused name.
@@ -94,6 +94,7 @@ echo N = keep originals, results are saved in an av1 folder inside each folder
 choice /c YN /n /m "Delete originals after a successful conversion? [Y/N]: "
 rem Ctrl+C makes choice return 0, which must not mean delete
 if errorlevel 1 if not errorlevel 2 set DEL_ORIGINAL=Y
+if errorlevel 3 set NO_KEYS=1
 set SUB=av1\
 if "%DEL_ORIGINAL%"=="Y" set SUB=
 
@@ -133,7 +134,7 @@ if not errorlevel 1 exit /b 1
 exit /b %errorlevel%
 
 :try_encoder
-ffmpeg -v quiet -f lavfi -i testsrc2=size=1920x1080:rate=30 -frames:v 10 -vf "%VF%" -c:v %ENC% -f null NUL
+ffmpeg -nostdin -v quiet -f lavfi -i testsrc2=size=1920x1080:rate=30 -frames:v 10 -vf "%VF%" -c:v %ENC% -f null NUL
 exit /b %errorlevel%
 
 :convert_one
@@ -224,8 +225,8 @@ if %DUR% LSS 60 goto encode
 set /a SS=DUR/2-5
 echo [check] Estimating the saving: "%SRC%"
 del "%TMPD%\s_src.mkv" "%TMPD%\s_av1.mkv" 2>nul
-ffmpeg -v quiet -ss %SS% -i "%SRC%" -t 10 -map 0:v:%VN% -c copy -y "%TMPD%\s_src.mkv"
-ffmpeg -v quiet %HWACCEL% -ss %SS% -i "%SRC%" -t 10 -map 0:v:%VN% -vf "%VF%" -c:v %ENC% -y "%TMPD%\s_av1.mkv"
+ffmpeg -nostdin -v quiet -ss %SS% -i "%SRC%" -t 10 -map 0:v:%VN% -c copy -y "%TMPD%\s_src.mkv"
+ffmpeg -nostdin -v quiet %HWACCEL% -ss %SS% -i "%SRC%" -t 10 -map 0:v:%VN% -vf "%VF%" -c:v %ENC% -y "%TMPD%\s_av1.mkv"
 set SSZ=0
 set ESZ=0
 for %%a in ("%TMPD%\s_src.mkv") do if exist %%a set SSZ=%%~za
@@ -304,8 +305,9 @@ set "PART=%DIR%%SUB%%NAME%.part%OUTX%"
 if exist "%OUT%" if /i not "%OUT%"=="%SRC%" (echo [skip] Result "%OUT%" already exists: "%SRC%" & exit /b 20)
 
 rem ffmpeg returns negative codes on failure, which if errorlevel 1 misses, so OK is set only on exit code 0
+rem -nostdin, here and everywhere else: key q would end ffmpeg with exit code 0, and a cut-off result would count as finished
 set OK=
-ffmpeg -hide_banner -loglevel warning -stats %XIN% %HWACCEL% -i "%SRC%" %OPTS% -y "%PART%" && set OK=1
+ffmpeg -nostdin -hide_banner -loglevel warning -stats %XIN% %HWACCEL% -i "%SRC%" %OPTS% -y "%PART%" && set OK=1
 if not defined OK (
   echo [failed] "%SRC%"
   del "%PART%" 2>nul
@@ -346,7 +348,7 @@ exit /b
 :try_mux
 rem -map_metadata 0 is what keeps creation_time, which ffmpeg leaves out by default. mp4 writes VR metadata only with -strict unofficial.
 set OPTS=%MAPS% -map_metadata 0 -strict unofficial -c copy -filter:v:%VN% "%VF%" -c:v:%VN% %ENC% %AC% %MOVF%
-ffmpeg -v quiet %XIN% %HWACCEL% -i "%SRC%" -t 0.1 %OPTS% -y "%TMPD%\mux%OUTX%"
+ffmpeg -nostdin -v quiet %XIN% %HWACCEL% -i "%SRC%" -t 0.1 %OPTS% -y "%TMPD%\mux%OUTX%"
 exit /b %errorlevel%
 
 rem Below is PowerShell code, which batch never executes directly
@@ -381,6 +383,11 @@ $buf = New-Object Text.StringBuilder
 function Add-Log($result, $key) { [void]$buf.Append([DateTime]::Now.ToString('yyyy-MM-dd HH:mm:ss', [Globalization.CultureInfo]::InvariantCulture) + "`t$result`t$set`t$key`r`n") }
 # If another window has the log open, the lines stay in the buffer until the next pass
 function Save-Log { if ($buf.Length) { try { [IO.File]::AppendAllText($env:LOG, $buf.ToString()); $buf.Length = 0 } catch {} } }
+# Two windows can reach the same video, so a lock is held while converting. It lives in TEMP because a mount may not enforce it, and Windows frees it if the window dies.
+function Get-Lock($p) {
+  $h = [BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($p.ToLowerInvariant()))).Replace('-', '')
+  try { New-Object IO.FileStream -ArgumentList @([IO.Path]::Combine($env:TEMP, 'convert_av1', "$h.lock"), [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::Write, [IO.FileShare]::None, 4096, [IO.FileOptions]::DeleteOnClose) } catch { $null }
+}
 # Exit codes of :convert_one. Any other code means it was cut off, so nothing is recorded and the video runs again next time.
 $results = @{ 10 = 'converted'; 11 = 'converted'; 12 = 'converted'; 13 = 'converted'; 14 = 'converted'; 15 = 'converted'; 20 = 'skip-exists'; 21 = 'skip-larger'; 22 = 'skip-little-gain'; 23 = 'skip-not-smaller'; 24 = 'skip-color'; 25 = 'skip-data'; 26 = 'skip-cover'; 27 = 'skip-dovi'; 28 = 'skip-hdr10plus'; 29 = 'skip-captions'; 30 = 'failed'; 31 = 'skip-alpha' }
 function Add-Result {
@@ -401,10 +408,12 @@ function Add-Result {
       }
     } catch {}
   }
+  $lock.Dispose()
 }
 
 # 2) Find videos, including subfolders, and leave out the ones in the log. Inaccessible folders (System Volume Information etc.) and junctions or symlinks are skipped.
 #    Size and modified time come with the folder listing, so this costs nothing extra per file.
+#    name.part.ext is a result in progress, possibly from another window, or one left by a stopped run. It is never a source.
 $old = 0
 $keys = @{}
 $files = New-Object Collections.Generic.List[string]
@@ -414,7 +423,7 @@ while ($dirs.Count) {
   $d = $dirs.Pop()
   try {
     foreach ($f in ([IO.DirectoryInfo]$d).GetFiles()) {
-      if ($ext -contains $f.Extension) {
+      if ($ext -contains $f.Extension -and $f.BaseName -notlike '*.part') {
         $key = Get-Key $f
         if ($logged.Contains($key)) { $old++ } else { $files.Add($f.FullName); $keys[$f.FullName] = $f }
       }
@@ -457,13 +466,24 @@ try {
     if ($conv -and $conv.HasExited) { Add-Result; $conv = $null }
     if (-not $conv -and $todo.Count) {
       if ($line) { [Console]::Error.WriteLine(); $line = $false }
-      $k++
-      [Console]::Out.Write("[#$k | checked $done/$n] ")
-      $si = New-Object Diagnostics.ProcessStartInfo $env:ComSpec, '/c ""%BATF%" /convert-one"'
-      $si.UseShellExecute = $false
       $cur = $todo.Dequeue()
-      $si.EnvironmentVariables['SRC'] = $cur
-      $conv = [Diagnostics.Process]::Start($si)
+      # a.mov and a.mp4 end up with the same result name, so the name without its extension is what gets locked
+      $lock = Get-Lock ([IO.Path]::Combine([IO.Path]::GetDirectoryName($cur), [IO.Path]::GetFileNameWithoutExtension($cur)))
+      # The size is read after taking the lock, because another window may have replaced or removed the file since the list was made
+      $f = New-Object IO.FileInfo $cur
+      if (-not $lock) {
+        [Console]::Out.WriteLine("[skip] Another window is converting this video: `"$cur`"")
+      } elseif (-not $f.Exists -or $f.Length -ne $keys[$cur].Length) {
+        $lock.Dispose()
+        [Console]::Out.WriteLine("[skip] Changed since the list was made, probably by another window: `"$cur`"")
+      } else {
+        $k++
+        [Console]::Out.Write("[#$k | checked $done/$n] ")
+        $si = New-Object Diagnostics.ProcessStartInfo $env:ComSpec, '/c ""%BATF%" /convert-one"'
+        $si.UseShellExecute = $false
+        $si.EnvironmentVariables['SRC'] = $cur
+        $conv = [Diagnostics.Process]::Start($si)
+      }
     }
     try { [Console]::Title = "AV1 checked $done/$n | already AV1 $av1 | converting #$k | queued $($todo.Count)" } catch {}
     # Show progress on one line while nothing is converting, so the window does not look frozen

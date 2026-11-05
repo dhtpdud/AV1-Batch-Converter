@@ -113,7 +113,7 @@ At startup, the script runs a real test encode in this order and uses the first 
 3. Check the target folder and choose `Y` (delete originals) or `N` (keep originals).
 4. Choose what happens to videos that would lose HDR10+, Dolby Vision profile 7 or transparency.
 
-Progress of the check is shown in the window title. You can run several windows on different folders at the same time, but each window will be slower.
+Progress of the check is shown in the window title. You can run several windows at the same time, even on the same folder, but each window will be slower. If two windows reach the same video, one converts it and the other moves on to the next.
 
 **To stop**: close the window. The `name.part.ext` file of the conversion in progress is left behind, so delete it yourself.
 
@@ -216,7 +216,7 @@ To shrink videos like this you have to raise `CQ`, which also lowers the quality
 ### File names and folders
 
 - If result names collide, as with `a.mov` and `a.mp4`, the file processed later is skipped.
-- A `name.part.mp4` left behind after stopping is treated as a normal video on the next run. Delete it yourself.
+- Files named like `name.part.mp4` are never converted, because that is how unfinished results are named. One left behind after stopping is overwritten when that video is converted again, or you can delete it yourself.
 - Junctions and symbolic link folders are not searched.
 
 ### Environment

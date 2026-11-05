@@ -113,7 +113,7 @@ Beim Start führt das Skript in dieser Reihenfolge eine echte Testkodierung durc
 3. Prüfen Sie den Zielordner und wählen Sie `Y` (Originale löschen) oder `N` (Originale behalten).
 4. Wählen Sie, was mit Videos geschieht, die HDR10+, Dolby-Vision-Profil 7 oder Transparenz verlieren würden.
 
-Der Fortschritt der Prüfung wird im Fenstertitel angezeigt. Sie können mehrere Fenster gleichzeitig für verschiedene Ordner laufen lassen, aber jedes Fenster wird dann langsamer.
+Der Fortschritt der Prüfung wird im Fenstertitel angezeigt. Sie können mehrere Fenster gleichzeitig laufen lassen, auch für denselben Ordner, aber jedes Fenster wird dann langsamer. Treffen zwei Fenster auf dasselbe Video, konvertiert eines es und das andere macht mit dem nächsten weiter.
 
 **Zum Beenden**: Schließen Sie das Fenster. Die Datei `name.part.ext` der laufenden Konvertierung bleibt zurück, löschen Sie sie also selbst.
 
@@ -216,7 +216,7 @@ Um solche Videos zu verkleinern, müssen Sie `CQ` erhöhen, was auch die Qualit�
 ### Dateinamen und Ordner
 
 - Wenn Ergebnisnamen kollidieren, wie bei `a.mov` und `a.mp4`, wird die später verarbeitete Datei übersprungen.
-- Eine nach dem Beenden zurückgebliebene `name.part.mp4` wird beim nächsten Durchlauf wie ein normales Video behandelt. Löschen Sie sie selbst.
+- Dateien mit Namen wie `name.part.mp4` werden nie konvertiert, weil unfertige Ergebnisse so heißen. Eine nach dem Beenden zurückgebliebene Datei wird überschrieben, wenn dieses Video erneut konvertiert wird. Sie können sie auch selbst löschen.
 - Junctions und als symbolische Links angelegte Ordner werden nicht durchsucht.
 
 ### Umgebung
